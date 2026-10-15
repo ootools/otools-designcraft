@@ -130,3 +130,42 @@ index 9a581d4..f3a0d7e 100644
      ("help.appPage", "DesignCraft Website…", None, "{} — opens https://getartcraft.com/apps/designcraft"),
      ("help.github", "DesignCraft on GitHub…", None, "{} — opens https://github.com/storytold/designcraft"),
      ("help.issues", "Report an Issue…", None, "{} — opens the GitHub issue tracker"),
+diff --git a/crates/ui-egui/src/theme.rs b/crates/ui-egui/src/theme.rs
+index 193abf3..2664b8b 100644
+--- a/crates/ui-egui/src/theme.rs
++++ b/crates/ui-egui/src/theme.rs
+@@ -3,6 +3,19 @@
+ use std::sync::Arc;
+ 
+ use egui::{Color32, CornerRadius, FontData, FontDefinitions, FontFamily, FontId, Stroke, TextStyle, Visuals};
++
++/// 由宿主 shell 注入的额外 fallback 字体（键, 字体字节）。wasm 里读不到系统字体，
++/// 上游 craft-fonts 在我们的构建里又为空，故中文/日文/阿拉伯文需要 shell 侧补字体。
++static EXTRA_FALLBACK_FONTS: std::sync::OnceLock<Vec<(String, Arc<FontData>)>> = std::sync::OnceLock::new();
++
++/// 宿主 shell 在启动前调用一次，注入内嵌的 CJK / 阿拉伯 fallback 字体。
++pub fn set_extra_fallback_fonts(fonts: Vec<(String, Arc<FontData>)>) {
++    let _ = EXTRA_FALLBACK_FONTS.set(fonts);
++}
++
++fn extra_fallback_fonts() -> &'static [(String, Arc<FontData>)] {
++    EXTRA_FALLBACK_FONTS.get().map(|v| &v[..]).unwrap_or(&[])
++}
+ use serde::{Deserialize, Serialize};
+ 
+ #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+@@ -302,6 +315,14 @@ fn font_definitions(craft: &'static [designcraft_fonts::CraftFont], lang: &str)
+         let mut seen = std::collections::HashSet::new();
+         fonts.families.insert(FontFamily::Name(family.into()), stack.filter(|n| seen.insert(n.clone())).collect());
+     }
++    // 宿主注入的 fallback（CJK / 阿拉伯）追加到每个字体族末尾：拉丁字形仍走前面的 UI 字体，
++    // 缺字时才回落到它，覆盖中文 / 日文 / 阿拉伯文界面与文档文本。
++    for (name, data) in extra_fallback_fonts() {
++        fonts.font_data.insert(name.clone(), data.clone());
++    }
++    for stack in fonts.families.values_mut() {
++        stack.extend(extra_fallback_fonts().iter().map(|(n, _)| n.clone()));
++    }
+     fonts
+ }
+ 

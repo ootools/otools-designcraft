@@ -174,6 +174,12 @@ mod web {
                     Box::new(move |cc| {
                         let inbox: Inbox = Inbox::default();
                         let mut app = DesignApp::new(Session::new(), services(inbox.clone()));
+                        // wasm 里没有系统字体（上游字体加载在 wasm 直接跳过），内嵌一份
+                        // CJK + 阿拉伯 fallback，否则中文/日文/阿拉伯文界面全是方框。
+                        designcraft_ui_egui::theme::set_extra_fallback_fonts(vec![
+                            ("otools-cjk".into(), std::sync::Arc::new(eframe::egui::FontData::from_static(include_bytes!("../assets/fonts/otools-cjk-subset.ttf")))),
+                            ("otools-arabic".into(), std::sync::Arc::new(eframe::egui::FontData::from_static(include_bytes!("../assets/fonts/otools-arabic-subset.ttf")))),
+                        ]);
                         // 第一次打开跟随 OTools 的界面主题（插件 webview 的
                         // prefers-color-scheme 不一定等于宿主主题）。
                         if let Some(brightness) = Brightness::parse(&crate::otools::theme()) {
