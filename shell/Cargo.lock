@@ -2688,6 +2688,7 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "designcraft-engine",
+ "designcraft-fonts",
  "designcraft-ui-egui",
  "eframe",
  "egui",

@@ -24,6 +24,7 @@ path = "src/main.rs"
 
 [dependencies]
 designcraft-engine = { path = "../upstream/crates/engine" }
+designcraft-fonts = { path = "../upstream/crates/fonts" }
 designcraft-ui-egui = { path = "../upstream/crates/ui-egui" }
 egui = { version = "0.36", default-features = false }
 log = { version = "0.4", default-features = false }

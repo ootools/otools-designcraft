@@ -118,6 +118,16 @@
         return invoke('tools_webview_read_file', { path: path });
       }
 
+      // 宿主枚举的系统字体目录：`[{family, style, path, index, size}]`。
+      // 宿主只解析每个字体文件的 name 表（几 KB），字体字节仍按需走 readHostFile。
+      function listSystemFonts() {
+        var a = wrapper();
+        if (a && typeof a.listSystemFonts === 'function') return a.listSystemFonts();
+        var invoke = tauriInvoke();
+        if (!invoke) return fail('OTools 宿主不可用');
+        return invoke('tools_webview_list_fonts', {});
+      }
+
       function writeHostFile(path, dataBase64) {
         var invoke = tauriInvoke();
         if (invoke) {
@@ -236,6 +246,25 @@
               return { path: path };
             });
           });
+        },
+
+        /**
+         * 系统字体目录（宿主枚举）。不在 OTools 里时 reject，由 Rust 侧忽略。
+         * @returns {Promise<Array<{family: string, style: string, path: string, index: number, size: number}>>}
+         */
+        listSystemFonts: function () {
+          if (!hostReady()) return fail('OTools 宿主不可用');
+          return listSystemFonts();
+        },
+
+        /**
+         * 读宿主磁盘文件（字体桥按路径读字体字节用；与打开文档同一条路）。
+         * @param {string} path
+         * @returns {Promise<{path: string, name: string, dataBase64: string}>}
+         */
+        readHostFile: function (path) {
+          if (!hostReady()) return fail('OTools 宿主不可用');
+          return readHostFile(String(path || ''));
         }
       };
     })();

@@ -13,6 +13,9 @@
 mod otools;
 
 #[cfg(target_arch = "wasm32")]
+mod fontbridge;
+
+#[cfg(target_arch = "wasm32")]
 mod web {
     use std::cell::{Cell, RefCell};
 
@@ -64,6 +67,8 @@ mod web {
                 });
             }
             self.app.logic(ctx);
+            // 系统字体桥：应用要过的系统字体（菜单里选了、文档引用了）按需读字节装库。
+            crate::fontbridge::poll(ctx);
             // 让插件更纯粹：吞掉所有社区/外部链接（Discord、ArtCraft 官网、上游 GitHub），
             // 点击不再跳出插件。文档内普通链接不受影响。
             ctx.output_mut(|o| {
@@ -87,6 +92,13 @@ mod web {
 
     fn query() -> String {
         web_sys::window().and_then(|w| w.location().search().ok()).unwrap_or_default()
+    }
+
+    /// 请求一次重绘（缓存下来的 egui Context；供字体桥等后台任务用）。
+    pub fn request_repaint() {
+        if let Some(ctx) = APP_CTX.with(|c| c.borrow().clone()) {
+            ctx.request_repaint();
+        }
     }
 
     fn has_flag(query: &str, key: &str) -> bool {
@@ -196,6 +208,8 @@ mod web {
                 .await;
             // 监听宿主语言切换（OTools 注入的 `otools-locale-changed` 事件）。
             install_locale_listener();
+            // 系统字体桥：取宿主的字体目录（异步），之后字体菜单能列出系统字体。
+            crate::fontbridge::fetch_catalog();
             if let Some(el) = document.get_element_by_id(LOADING_ID) {
                 match result {
                     Ok(()) => el.remove(),
