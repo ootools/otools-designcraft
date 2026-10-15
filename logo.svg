@@ -1,4 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="#2563eb"/>
-  <text x="32" y="44" font-family="Segoe UI Symbol, Apple Color Emoji, Noto Color Emoji, sans-serif" font-size="32" text-anchor="middle">📰</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="DesignCraft">
+  <defs>
+    <linearGradient id="bg-designcraft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg-designcraft)"/>
+  <g fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M64 70 L42 48 M64 70 L86 48"/>
+    <path d="M64 62 L72 70 L64 78 L56 70 Z"/>
+  </g>
+  <g fill="#fff">
+    <circle cx="42" cy="48" r="6"/>
+    <circle cx="86" cy="48" r="6"/>
+    <circle cx="64" cy="70" r="7"/>
+  </g>
 </svg>

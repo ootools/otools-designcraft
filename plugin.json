@@ -2,7 +2,7 @@
   "devUrl": "http://127.0.0.1:6484",
   "developerName": "jry",
   "displayName": "DesignCraft",
-  "displayNameCN": "排版设计",
+  "displayNameCN": "DesignCraft",
   "entry": "dist/index.html",
   "quickDev": true,
   "hasAd": false,
