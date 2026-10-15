@@ -44,6 +44,7 @@ features = [
   "BlobPropertyBag",
   "Document",
   "Element",
+  "EventTarget",
   "HtmlAnchorElement",
   "HtmlCanvasElement",
   "HtmlElement",

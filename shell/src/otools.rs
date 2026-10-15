@@ -29,6 +29,11 @@ extern "C" {
     #[wasm_bindgen(js_namespace = designcraftOtools, js_name = "theme")]
     fn host_theme() -> String;
 
+    /// 宿主界面语言（BCP 47，如 `zh-CN`）：OTools 注入到插件 webview 的
+    /// `window.__OTOOLS_LOCALE__.locale` / `document.documentElement.lang`。
+    #[wasm_bindgen(js_namespace = designcraftOtools, js_name = "language")]
+    fn host_language_raw() -> String;
+
     /// `{title, extensions}` → `[{name, path, dataBase64}]`。
     #[wasm_bindgen(js_namespace = designcraftOtools, js_name = "openFiles")]
     fn host_open_files(request: JsValue) -> js_sys::Promise;
@@ -53,6 +58,17 @@ pub fn available() -> bool {
 /// OTools 的界面主题，用于给 egui 一个初始主题（`""` = 跟随系统）。
 pub fn theme() -> String {
     host_theme()
+}
+
+/// 宿主界面语言（BCP 47，如 `zh-CN`）：跟随 OTools 宿主语言切换。
+pub fn host_language() -> String {
+    host_language_raw()
+}
+
+/// 社区/外部链接（Discord、ArtCraft 官网、上游 GitHub）：在 OTools 插件里点这些
+/// 会把用户拽到外部，让插件不纯粹。语言切换监听与链接屏蔽用到它。
+pub fn is_community_url(url: &str) -> bool {
+    url.contains("discord.gg") || url.contains("getartcraft.com") || url.contains("github.com/storytold")
 }
 
 pub fn install(inbox: Inbox, ctx: egui::Context) {
