@@ -23,5 +23,5 @@
   "screenshots": [],
   "summary": "DesignCraft（开源、纯 Rust 重写的 Adobe InDesign 式排版工具）的 OTools 插件版：页面网格、图文框、段落与字符样式、主页母版与导出。",
   "uuid": "otools-designcraft",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }
