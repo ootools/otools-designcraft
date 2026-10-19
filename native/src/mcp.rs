@@ -25,18 +25,22 @@ pub fn tools_payload() -> Value {
 /// 上游的 MCP server 之所以没这个问题，是因为它是长驻进程、持有一个
 /// `Box<dyn Backend>`。这里用同样的思路：把 Session 存在 dylib 内的 OnceLock 里，
 /// 生命周期与动态库一致，宿主热更新时会走 `__otools_shutdown__` 退役旧库。
+///
+/// 用 `with_document()` 而不是 `new()`：与上游自己的 headless server 一致
+/// （`apps/designcraft-cli/src/main.rs:394` 就是 `Headless::with_document()`），
+/// 会话起始就有一份默认文档，`execute` / `inspect_document` 可直接用。
 static HEADLESS: std::sync::OnceLock<std::sync::Mutex<Headless>> = std::sync::OnceLock::new();
 
 fn headless() -> &'static std::sync::Mutex<Headless> {
-    HEADLESS.get_or_init(|| std::sync::Mutex::new(Headless::new()))
+    HEADLESS.get_or_init(|| std::sync::Mutex::new(Headless::with_document()))
 }
 
 /// 关掉会话（供宿主热更新前的停机握手调用）。
 pub fn shutdown_headless() {
     if let Some(lock) = HEADLESS.get() {
         if let Ok(mut backend) = lock.lock() {
-            // 置为全新会话，释放旧文档占用的内存。
-            *backend = Headless::new();
+            // 置为全新会话（带默认文档，与初始状态一致），释放旧文档占用的内存。
+            *backend = Headless::with_document();
         }
     }
 }
