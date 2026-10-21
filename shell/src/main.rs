@@ -127,6 +127,7 @@ mod web {
                     if let Err(e) = crate::otools::deliver(name, bytes) {
                         log::error!("保存 {name} 失败：{e}");
                     }
+                    Ok(())
                 })),
                 inbox: Some(shared),
                 ..Services::default()
@@ -139,6 +140,7 @@ mod web {
                 if let Err(e) = download(name, bytes) {
                     log::error!("download of {name} failed: {e}");
                 }
+                Ok(())
             })),
             inbox: Some(inbox),
             ..Services::default()

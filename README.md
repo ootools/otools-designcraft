@@ -7,6 +7,16 @@
 - 插件目录：`plugins/otools-designcraft`（在 [ootools/OTools](https://github.com/ootools/OTools) 主仓里）
 - 上游源码：**不入库**，见 `upstream.pin` + `scripts/fetch-upstream.mjs`
 
+## 上游版本
+
+打包所用的上游提交。`upstream.pin` 是唯一真源，这张表用来回溯「哪个插件版本打的是哪份上游代码」，
+每次发布都要在这里加一行。
+
+| 插件版本 | 上游标签 | 上游提交 | 打包日期 |
+| --- | --- | --- | --- |
+| 0.1.4 | v0.10.0 | `15a2f3c8c88ae2e011e5912149ac67460ea6d949` | 2026-10-21 |
+| 0.1.3 | — | `d07cbbe94c2762865eaefeff4ebfd1dbada180a0` | — |
+
 ## 构建
 
 ```bash

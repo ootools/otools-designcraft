@@ -1,9 +1,9 @@
 diff --git a/crates/fonts/src/fontdb.rs b/crates/fonts/src/fontdb.rs
-index bc9c9e6..d15ea52 100644
+index 352e095..381ef34 100644
 --- a/crates/fonts/src/fontdb.rs
 +++ b/crates/fonts/src/fontdb.rs
-@@ -678,6 +678,48 @@ pub fn system_font_dirs() -> Vec<std::path::PathBuf> {
-     dirs
+@@ -840,6 +840,48 @@ fn unscanned_font_files(listed: Vec<std::path::PathBuf>, scanned: &mut std::coll
+         .collect()
  }
  
 +/// A face of a system font the host listed for the wasm build ([`set_system_fonts`]):
@@ -51,7 +51,7 @@ index bc9c9e6..d15ea52 100644
  /// One face found in a font file: index, family, style and (variable fonts) the named instance's
  /// axis settings.
  type Found = (u32, String, String, Vec<([u8; 4], f32)>);
-@@ -1329,6 +1371,8 @@ impl ScopedFonts<'_> {
+@@ -1753,6 +1795,8 @@ impl ScopedFonts<'_> {
          let mut v: Vec<String> = self.own().iter().chain(self.db.read_faces().iter()).map(|f| f.family.clone()).collect();
          #[cfg(not(target_arch = "wasm32"))]
          v.extend(self.db.read_catalog().iter().map(|c| c.family.clone()));
@@ -60,7 +60,7 @@ index bc9c9e6..d15ea52 100644
          v.sort_by_key(|a| a.to_lowercase());
          v.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
          v
-@@ -1351,6 +1395,12 @@ impl ScopedFonts<'_> {
+@@ -1775,6 +1819,12 @@ impl ScopedFonts<'_> {
                  out.push(FamilyInfo { family: c.family.clone(), group: c.group, native: c.native.clone() });
              }
          }
@@ -73,8 +73,8 @@ index bc9c9e6..d15ea52 100644
          out
      }
  
-@@ -1422,6 +1472,12 @@ impl ScopedFonts<'_> {
-                 v.push((style_italic(&c.style), style_weight(&c.style), c.style.clone()));
+@@ -1861,6 +1911,12 @@ impl ScopedFonts<'_> {
+                 v.push((style_italic(style), style_weight(style), style.to_string()));
              }
          }
 +        #[cfg(target_arch = "wasm32")]
@@ -86,7 +86,7 @@ index bc9c9e6..d15ea52 100644
          v.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.total_cmp(&b.1)).then(a.2.cmp(&b.2)));
          v.dedup_by(|a, b| a.2 == b.2);
          v
-@@ -1448,6 +1504,15 @@ impl ScopedFonts<'_> {
+@@ -1892,6 +1948,15 @@ impl ScopedFonts<'_> {
          if self.db.load_cataloged(family) {
              return self.find(family, style);
          }
@@ -102,24 +102,24 @@ index bc9c9e6..d15ea52 100644
          None
      }
  
-@@ -1502,6 +1567,10 @@ impl ScopedFonts<'_> {
-         if self.db.read_catalog().iter().any(|c| c.family.eq_ignore_ascii_case(family)) {
-             return true;
-         }
+@@ -1950,6 +2015,10 @@ impl ScopedFonts<'_> {
+     /// Is `family` available (the document's, loaded, or installed on the system), as named or
+     /// under an alternate name (see [`ScopedFonts::face`])?
+     pub fn has_family(&self, family: &str) -> bool {
 +        #[cfg(target_arch = "wasm32")]
 +        if system_fonts().iter().any(|c| c.family.eq_ignore_ascii_case(family)) {
 +            return true;
 +        }
-         false
+         self.canonical_family(family).is_some() || alternate_names(family).any(|f| self.canonical_family(f).is_some())
      }
  
 diff --git a/crates/fonts/src/lib.rs b/crates/fonts/src/lib.rs
-index 5ff395d..2e70de0 100644
+index aca293d..d52f7c6 100644
 --- a/crates/fonts/src/lib.rs
 +++ b/crates/fonts/src/lib.rs
-@@ -18,6 +18,8 @@ pub use fontdb::{
+@@ -22,6 +22,8 @@ pub use fontdb::{
      DOCUMENT_FONTS_FOLDER, DocumentFonts, FALLBACK_FAMILY, FaceRef, FontDb, FontFace, FontSource, MAX_DOCUMENT_FONT_BYTES, MAX_DOCUMENT_FONT_FILES,
-     MAX_DOCUMENT_FONTS_TOTAL, ScopedFonts, base_style, bundled, system_font_dirs,
+     MAX_DOCUMENT_FONTS_TOTAL, ReloadedFonts, ScopedFonts, base_style, bundled, same_style, system_font_dirs,
  };
 +#[cfg(target_arch = "wasm32")]
 +pub use fontdb::{SystemFont, set_system_fonts, take_pending_fonts};
