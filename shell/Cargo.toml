@@ -57,16 +57,17 @@ features = [
 
 # 上游 workspace 里的 `[patch.crates-io]` **不会**跟着 path 依赖带过来：
 # 补丁只在发起构建的那个 workspace 根节点生效。上游这段 patch 指向 git 上的
-# winit 分支、craft-libs 的 krilla 与 pdfcraft 的 hayro 分支，原样复制即可。
+# winit 分支，以及 craft-libs 里的 krilla 与 hayro 分支（hayro 系列从 v0.13.0
+# 起改由 craft-libs 提供，不再走 pdfcraft 仓），原样复制即可。
 # 上游更新后要同步这里 —— 见 AGENTS.md。
 [patch.crates-io]
-winit = { git = "https://github.com/skylartaylor/winit.git", rev = "3d51077fd1a966f84df9ef287839dc84fd5b4ca7" }
-# craft-pdf 要求 krilla 带上游 vendor/krilla 的补丁标记（CRAFT_UNWIND_POISONING）。
-krilla = { git = "https://github.com/storytold/craft-libs", rev = "c3487320b2d1de657b860b3c8abb44e1f2b32bd8", version = "=0.8.2" }
-hayro = { git = "https://github.com/storytold/pdfcraft", rev = "b5467d93a0ffaa5e5e6658bccdf8655a3ba689c9" }
-hayro-interpret = { git = "https://github.com/storytold/pdfcraft", rev = "b5467d93a0ffaa5e5e6658bccdf8655a3ba689c9" }
-hayro-syntax = { git = "https://github.com/storytold/pdfcraft", rev = "b5467d93a0ffaa5e5e6658bccdf8655a3ba689c9" }
-hayro-jbig2 = { git = "https://github.com/storytold/pdfcraft", rev = "b5467d93a0ffaa5e5e6658bccdf8655a3ba689c9" }
+krilla = { git = "https://github.com/storytold/craft-libs", rev = "9f75d3dc19b4b514c4f3d4847ed1ec1b0e86b4ef", version = "=0.8.2" }
+winit = { git = "https://github.com/storytold/winit.git", rev = "3d51077fd1a966f84df9ef287839dc84fd5b4ca7" }
+hayro = { git = "https://github.com/storytold/craft-libs", rev = "9f75d3dc19b4b514c4f3d4847ed1ec1b0e86b4ef", version = "=0.7.1" }
+hayro-interpret = { git = "https://github.com/storytold/craft-libs", rev = "9f75d3dc19b4b514c4f3d4847ed1ec1b0e86b4ef", version = "=0.7.0" }
+hayro-syntax = { git = "https://github.com/storytold/craft-libs", rev = "9f75d3dc19b4b514c4f3d4847ed1ec1b0e86b4ef", version = "=0.7.2" }
+hayro-jbig2 = { git = "https://github.com/storytold/craft-libs", rev = "9f75d3dc19b4b514c4f3d4847ed1ec1b0e86b4ef", version = "=0.3.0" }
+hayro-cmap = { git = "https://github.com/storytold/craft-libs", rev = "9f75d3dc19b4b514c4f3d4847ed1ec1b0e86b4ef", version = "=0.1.0" }
 
 [profile.release]
 opt-level = 3
