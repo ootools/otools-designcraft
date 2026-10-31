@@ -3,7 +3,7 @@
 //! 本文件改编自上游 `apps/designcraft-web/src/web.rs`（上游 eframe web runner 的外壳）。
 //! 改动都在「文件从哪来、存到哪去」上：
 //!
-//! 1. `services()` 的 `open_async` / `pick_save` / `write` / `download` 走 [`otools`]
+//! 1. `services()` 的 `open_async` / `write` / `download` 走 [`otools`]
 //! 2. 首次启动时用 OTools 的界面主题给 egui 一个初始亮度
 //! 3. 不在 OTools 里时（把 dist 拖进普通浏览器）退回浏览器下载
 //!
@@ -85,7 +85,7 @@ mod web {
         fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
             // 浏览器把未知键名当文本事件；插件里 eframe 直接给键名，不需要这层修正。
             designcraft_ui_egui::drop_key_name_text(raw, ctx.text_edit_focused());
-            self.app.raw_input_hook(raw);
+            self.app.raw_input_hook(ctx, raw);
         }
 
         fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
@@ -110,6 +110,10 @@ mod web {
     }
 
     /// 宿主服务：在 OTools 里用宿主的对话框与磁盘；否则退回上游网页版的行为。
+    ///
+    /// 上游 0.15 起 wasm 不再有 `pick_save`：保存（含「另存为」）统一把建议文件名连同
+    /// 字节交给 `download` 服务。宿主侧由 index.html 的 name→path 映射兜底——首次保存
+    /// 弹对话框，之后同名静默覆写（见 `shell/index.html` 的 `saveFile`）。
     fn services(inbox: Inbox) -> Services {
         let shared = inbox.clone();
         if crate::otools::available() {
@@ -119,7 +123,6 @@ mod web {
                     let _ = &open_inbox;
                     crate::otools::pick_open_request(&request);
                 })),
-                pick_save: Some(Box::new(crate::otools::pick_save)),
                 write: Some(Box::new(|name: &str, bytes: &[u8]| {
                     if let Err(e) = crate::otools::deliver(name, bytes) {
                         log::error!("写 {name} 失败：{e}");
@@ -137,7 +140,6 @@ mod web {
             };
         }
         Services {
-            pick_save: Some(Box::new(|name: &str| Some(name.to_string()))),
             write: Some(Box::new(|name: &str, bytes: &[u8]| download(name, bytes))),
             download: Some(Box::new(|name: &str, bytes: &[u8]| {
                 if let Err(e) = download(name, bytes) {

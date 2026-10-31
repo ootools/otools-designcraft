@@ -8,12 +8,12 @@
 //!
 //! 与上游的对接点都在上游设计好的 `Services` 钩子上，上游源码零改动：
 //! - `Services::open_async` —— 弹宿主的打开对话框，读到字节推进 inbox
-//! - `Services::pick_save`  —— 记住「这次要弹另存对话框」，返回建议文件名
 //! - `Services::write` / `Services::download` —— 保存时把字节交给宿主写盘
+//!   （上游 0.15 起 wasm 的保存没有对话框阶段，弹不弹由宿主 index.html 决定）
 //!
 //! JS 侧的实现见 `shell/index.html` 里的 `window.designcraftOtools`。
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 
 use base64::Engine as _;
 use designcraft_ui_egui::{ImportRequest, ImportedFile, Inbox};
@@ -50,8 +50,6 @@ extern "C" {
 thread_local! {
     /// 打开的文件交给它：下一帧由 `WebShell::logic` 交给应用（上游的 Inbox 机制）。
     static OUTBOX: RefCell<Option<(Inbox, egui::Context)>> = const { RefCell::new(None) };
-    /// 下一次保存是否**必须**弹另存对话框（「导出/另存为」置真，「保存」用上次路径）。
-    static FORCE_PICK: Cell<bool> = const { Cell::new(false) };
 }
 
 /// 宿主是否可用（不在 OTools 里时退回上游的浏览器行为：下载文件）。
@@ -153,13 +151,10 @@ pub fn drain_delivered() {
     }
 }
 
-/// `Services::pick_save`：置「下次弹另存对话框」并返回建议的文件名。
-pub fn pick_save(name: &str) -> Option<String> {
-    FORCE_PICK.with(|flag| flag.set(true));
-    Some(name.to_string())
-}
-
 /// `Services::write` / `Services::download`：把字节交给宿主写盘。
+///
+/// 上游 0.15 起 wasm 不再有 `pick_save` 钩子，保存（含「另存为」）都从这里走；
+/// 要不要弹对话框由宿主 index.html 的 name→path 映射决定（首次弹，之后静默覆写）。
 ///
 /// 上游的钩子是同步的 `fn`，而宿主的对话框是 Promise，所以这里发起一次后台任务并
 /// 立刻返回 `Ok`（与上游网页版「下载已开始即算已保存」的语义一致）。
@@ -167,8 +162,7 @@ pub fn deliver(name: &str, bytes: &[u8]) -> Result<(), String> {
     if name.trim().is_empty() {
         return Err("需要一个文件名".into());
     }
-    let force = FORCE_PICK.with(|flag| flag.replace(false));
-    let request = save_request(&file_name(name), &base64::engine::general_purpose::STANDARD.encode(bytes), force);
+    let request = save_request(&file_name(name), &base64::engine::general_purpose::STANDARD.encode(bytes), false);
     // spawn_local 要求 'static：`name` 的所有权必须带进异步块，不能借用函数参数。
     let name = name.to_string();
     wasm_bindgen_futures::spawn_local(async move {

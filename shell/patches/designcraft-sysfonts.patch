@@ -1,8 +1,95 @@
 diff --git a/crates/fonts/src/fontdb.rs b/crates/fonts/src/fontdb.rs
-index 352e095..381ef34 100644
+index d0f0054..1dc95d7 100644
 --- a/crates/fonts/src/fontdb.rs
 +++ b/crates/fonts/src/fontdb.rs
-@@ -840,6 +840,48 @@ fn unscanned_font_files(listed: Vec<std::path::PathBuf>, scanned: &mut std::coll
+@@ -148,6 +148,8 @@ use system::unix_font_dirs;
+ #[cfg(not(target_arch = "wasm32"))]
+ use system::{CatalogEntry, FileStamp};
+ pub use system::{ReloadedFonts, system_font_dirs};
++#[cfg(target_arch = "wasm32")]
++pub use system::{SystemFont, set_system_fonts, take_pending_fonts};
+ 
+ impl OutlinePen for FlipPen {
+     fn move_to(&mut self, x: f32, y: f32) {
+diff --git a/crates/fonts/src/fontdb/scoped.rs b/crates/fonts/src/fontdb/scoped.rs
+index 0125984..5176748 100644
+--- a/crates/fonts/src/fontdb/scoped.rs
++++ b/crates/fonts/src/fontdb/scoped.rs
+@@ -3,6 +3,10 @@ use super::face::{BUNDLED, FontSource, enumerate_faces};
+ use super::face::{FALLBACK_FAMILY, FontFace, last_resort_face, make_face};
+ use super::fallback::{cjk_chain, script_chain};
+ use super::names::{alternate_names, base_style, has_wws_family, known_as, norm, style_italic, style_weight};
++#[cfg(target_arch = "wasm32")]
++use super::system::{remember_pending_font, system_fonts};
++#[cfg(target_arch = "wasm32")]
++use super::FontGroup;
+ use super::{Arc, BezPath, FamilyInfo, FontDb, MetadataProvider, PoisonError};
+ 
+ /// One document's view of the [`FontDb`] ([`FontDb::scoped`]): the fonts of its `Document Fonts`
+@@ -125,6 +129,8 @@ impl ScopedFonts<'_> {
+         let mut v: Vec<String> = self.own().iter().chain(self.db.read_faces().iter()).map(|f| f.family.clone()).collect();
+         #[cfg(not(target_arch = "wasm32"))]
+         v.extend(self.db.read_catalog().iter().map(|c| c.family.clone()));
++        #[cfg(target_arch = "wasm32")]
++        v.extend(system_fonts().iter().map(|c| c.family.clone()));
+         v.sort_by_key(|a| a.to_lowercase());
+         v.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+         v
+@@ -147,6 +153,12 @@ impl ScopedFonts<'_> {
+                 out.push(FamilyInfo { family: c.family.clone(), group: c.group, native: c.native.clone() });
+             }
+         }
++        #[cfg(target_arch = "wasm32")]
++        for c in system_fonts().iter() {
++            if seen.insert(c.family.to_lowercase()) {
++                out.push(FamilyInfo { family: c.family.clone(), group: FontGroup::Western, native: None });
++            }
++        }
+         out
+     }
+ 
+@@ -233,6 +245,12 @@ impl ScopedFonts<'_> {
+                 v.push((style_italic(style), style_weight(style), style.to_string()));
+             }
+         }
++        #[cfg(target_arch = "wasm32")]
++        for c in system_fonts().iter() {
++            if c.family.eq_ignore_ascii_case(family) && !v.iter().any(|(_, _, s)| s.eq_ignore_ascii_case(&c.style)) {
++                v.push((style_italic(&c.style), style_weight(&c.style), c.style.clone()));
++            }
++        }
+         v.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.total_cmp(&b.1)).then(a.2.cmp(&b.2)));
+         v.dedup_by(|a, b| a.2 == b.2);
+         v
+@@ -264,6 +282,12 @@ impl ScopedFonts<'_> {
+         if self.db.load_cataloged(family) {
+             return self.find(family, style);
+         }
++        // wasm: the host lists the system fonts but holds no file system to read them;
++        // remember the family so the shell reads its file and adds its faces.
++        #[cfg(target_arch = "wasm32")]
++        if system_fonts().iter().any(|c| c.family.eq_ignore_ascii_case(family)) {
++            remember_pending_font(family);
++        }
+         None
+     }
+ 
+@@ -285,6 +309,10 @@ impl ScopedFonts<'_> {
+     /// Is `family` available (the document's, loaded, or installed on the system), as named or
+     /// under an alternate name (see [`ScopedFonts::face`])?
+     pub fn has_family(&self, family: &str) -> bool {
++        #[cfg(target_arch = "wasm32")]
++        if system_fonts().iter().any(|c| c.family.eq_ignore_ascii_case(family)) {
++            return true;
++        }
+         self.canonical_family(family).is_some() || alternate_names(family).any(|f| self.canonical_family(f).is_some())
+     }
+ 
+diff --git a/crates/fonts/src/fontdb/system.rs b/crates/fonts/src/fontdb/system.rs
+index 2a367b8..494152c 100644
+--- a/crates/fonts/src/fontdb/system.rs
++++ b/crates/fonts/src/fontdb/system.rs
+@@ -227,6 +227,58 @@ fn unscanned_font_files(listed: Vec<std::path::PathBuf>, scanned: &mut std::coll
          .collect()
  }
  
@@ -36,83 +123,31 @@ index 352e095..381ef34 100644
 +}
 +
 +/// The system font families asked for since the last call, not loaded yet (wasm only):
-+/// the shell reads their files through the host and adds them. Empty without a host
++/// the shell reads their files through the host and adds the faces. Empty without a host
 +/// font bridge (a plain browser build).
 +#[cfg(target_arch = "wasm32")]
 +pub fn take_pending_fonts() -> Vec<String> {
 +    std::mem::take(&mut *PENDING_FONTS.lock().unwrap_or_else(|e| e.into_inner()))
 +}
 +
++/// The families asked for since the last call but not loaded yet (wasm only): remember
++/// `family` so the shell reads its file through the host and adds its faces.
 +#[cfg(target_arch = "wasm32")]
-+fn system_fonts() -> std::sync::RwLockReadGuard<'static, Vec<SystemFont>> {
++pub(super) fn remember_pending_font(family: &str) {
++    let mut pending = PENDING_FONTS.lock().unwrap_or_else(|e| e.into_inner());
++    if !pending.iter().any(|p| p.eq_ignore_ascii_case(family)) {
++        pending.push(family.to_string());
++    }
++}
++
++#[cfg(target_arch = "wasm32")]
++pub(super) fn system_fonts() -> std::sync::RwLockReadGuard<'static, Vec<SystemFont>> {
 +    SYSTEM_FONTS.read().unwrap_or_else(|e| e.into_inner())
 +}
 +
- /// One face found in a font file: index, family, style and (variable fonts) the named instance's
- /// axis settings.
- type Found = (u32, String, String, Vec<([u8; 4], f32)>);
-@@ -1753,6 +1795,8 @@ impl ScopedFonts<'_> {
-         let mut v: Vec<String> = self.own().iter().chain(self.db.read_faces().iter()).map(|f| f.family.clone()).collect();
-         #[cfg(not(target_arch = "wasm32"))]
-         v.extend(self.db.read_catalog().iter().map(|c| c.family.clone()));
-+        #[cfg(target_arch = "wasm32")]
-+        v.extend(system_fonts().iter().map(|c| c.family.clone()));
-         v.sort_by_key(|a| a.to_lowercase());
-         v.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
-         v
-@@ -1775,6 +1819,12 @@ impl ScopedFonts<'_> {
-                 out.push(FamilyInfo { family: c.family.clone(), group: c.group, native: c.native.clone() });
-             }
-         }
-+        #[cfg(target_arch = "wasm32")]
-+        for c in system_fonts().iter() {
-+            if seen.insert(c.family.to_lowercase()) {
-+                out.push(FamilyInfo { family: c.family.clone(), group: FontGroup::Western, native: None });
-+            }
-+        }
-         out
-     }
- 
-@@ -1861,6 +1911,12 @@ impl ScopedFonts<'_> {
-                 v.push((style_italic(style), style_weight(style), style.to_string()));
-             }
-         }
-+        #[cfg(target_arch = "wasm32")]
-+        for c in system_fonts().iter() {
-+            if c.family.eq_ignore_ascii_case(family) && !v.iter().any(|(_, _, s)| s.eq_ignore_ascii_case(&c.style)) {
-+                v.push((style_italic(&c.style), style_weight(&c.style), c.style.clone()));
-+            }
-+        }
-         v.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.total_cmp(&b.1)).then(a.2.cmp(&b.2)));
-         v.dedup_by(|a, b| a.2 == b.2);
-         v
-@@ -1892,6 +1948,15 @@ impl ScopedFonts<'_> {
-         if self.db.load_cataloged(family) {
-             return self.find(family, style);
-         }
-+        // wasm: the host lists the system fonts but holds no file system to read them;
-+        // remember the family so the shell reads its file and adds its faces.
-+        #[cfg(target_arch = "wasm32")]
-+        if system_fonts().iter().any(|c| c.family.eq_ignore_ascii_case(family)) {
-+            let mut pending = PENDING_FONTS.lock().unwrap_or_else(|e| e.into_inner());
-+            if !pending.iter().any(|p| p.eq_ignore_ascii_case(family)) {
-+                pending.push(family.to_string());
-+            }
-+        }
-         None
-     }
- 
-@@ -1950,6 +2015,10 @@ impl ScopedFonts<'_> {
-     /// Is `family` available (the document's, loaded, or installed on the system), as named or
-     /// under an alternate name (see [`ScopedFonts::face`])?
-     pub fn has_family(&self, family: &str) -> bool {
-+        #[cfg(target_arch = "wasm32")]
-+        if system_fonts().iter().any(|c| c.family.eq_ignore_ascii_case(family)) {
-+            return true;
-+        }
-         self.canonical_family(family).is_some() || alternate_names(family).any(|f| self.canonical_family(f).is_some())
-     }
- 
+ impl FontDb {
+     /// Catalog the installed fonts unless that has been done: the first caller scans the font
+     /// folders, any other waits for that scan to finish.
 diff --git a/crates/fonts/src/lib.rs b/crates/fonts/src/lib.rs
 index aca293d..d52f7c6 100644
 --- a/crates/fonts/src/lib.rs

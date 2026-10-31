@@ -1,5 +1,5 @@
 diff --git a/crates/ui-egui/src/about.rs b/crates/ui-egui/src/about.rs
-index 75442b9..ce7da45 100644
+index 30e4827..5e6c3c6 100644
 --- a/crates/ui-egui/src/about.rs
 +++ b/crates/ui-egui/src/about.rs
 @@ -182,16 +182,6 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
@@ -19,11 +19,11 @@ index 75442b9..ce7da45 100644
              ui.add_space(14.0);
              ui.horizontal(|ui| {
                  // Centre the row of links.
-diff --git a/crates/ui-egui/src/chrome.rs b/crates/ui-egui/src/chrome.rs
-index 5183222..4ffcb24 100644
---- a/crates/ui-egui/src/chrome.rs
-+++ b/crates/ui-egui/src/chrome.rs
-@@ -326,10 +326,6 @@ pub fn app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
+diff --git a/crates/ui-egui/src/chrome/app_bar.rs b/crates/ui-egui/src/chrome/app_bar.rs
+index b93113d..5b40227 100644
+--- a/crates/ui-egui/src/chrome/app_bar.rs
++++ b/crates/ui-egui/src/chrome/app_bar.rs
+@@ -299,10 +299,6 @@ pub fn app_bar(app: &mut DesignApp, ui: &mut egui::Ui) {
                                  app.status(crate::i18n::tr(&app.ui.language, "Export a PDF, IDML or package to share — no cloud account needed."));
                              }
                              ui.add_space(8.0);
@@ -32,9 +32,13 @@ index 5183222..4ffcb24 100644
 -                                let _ = app.run("help.discord", json!({}));
 -                            }
                              tools_start = ui.min_rect().min.x;
-                             ui.data_mut(|d| d.insert_temp(egui::Id::new("app_bar_tools_start"), tools_start));
+                             ui.data_mut(|d| d.insert_temp(egui::Id::unique("app_bar_tools_start"), tools_start));
                              ui.min_rect().width()
-@@ -1263,8 +1259,6 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
+diff --git a/crates/ui-egui/src/chrome/start_screen.rs b/crates/ui-egui/src/chrome/start_screen.rs
+index 6e52487..1d8a68b 100644
+--- a/crates/ui-egui/src/chrome/start_screen.rs
++++ b/crates/ui-egui/src/chrome/start_screen.rs
+@@ -62,8 +62,6 @@ pub fn start_screen(app: &mut DesignApp, ui: &mut egui::Ui) {
                          let _ = app.run("file.newSample", json!({}));
                      }
                  });
@@ -43,10 +47,11 @@ index 5183222..4ffcb24 100644
                  recent_files(app, ui);
                  ui.add_space(24.0);
                  ui.label(crate::rtl::widget(
-@@ -1420,58 +1414,6 @@ fn recent_preview_texture(ctx: &egui::Context, path: &str, modified: Option<std:
+@@ -218,55 +216,3 @@ fn recent_preview_texture(ctx: &egui::Context, path: &str, modified: Option<std:
+     ctx.data_mut(|d| d.insert_temp::<Cached>(key, (modified, tex.clone())));
      tex
  }
- 
+-
 -/// Start screen: the ArtCraft community (Discord first) and project links.
 -fn community_card(app: &mut DesignApp, ui: &mut egui::Ui) {
 -    let t = Tokens::get(ui.ctx());
@@ -98,15 +103,23 @@ index 5183222..4ffcb24 100644
 -        });
 -    });
 -}
--
- #[cfg(test)]
- mod tests {
- 
-diff --git a/crates/ui-egui/src/menus.rs b/crates/ui-egui/src/menus.rs
-index 74fe860..2f210dd 100644
---- a/crates/ui-egui/src/menus.rs
-+++ b/crates/ui-egui/src/menus.rs
-@@ -306,7 +306,6 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
+diff --git a/crates/ui-egui/src/menus/tree.rs b/crates/ui-egui/src/menus/tree.rs
+index 6ab2e17..60952ec 100644
+--- a/crates/ui-egui/src/menus/tree.rs
++++ b/crates/ui-egui/src/menus/tree.rs
+@@ -107,7 +107,6 @@ pub enum AppMenuItem {
+ pub const MAC_APP_MENU: &[AppMenuItem] = &[
+     AppMenuItem::Cmd { id: "dc-about", label: "About DesignCraft", command: "help.about" },
+     AppMenuItem::Cmd { id: "dc-updates", label: "Check for Updates…", command: "help.checkForUpdates" },
+-    AppMenuItem::Cmd { id: "dc-discord", label: "Join the ArtCraft Discord…", command: "help.discord" },
+     AppMenuItem::Sep,
+     AppMenuItem::Cmd { id: "dc-settings", label: "Settings…", command: "app.preferences" },
+     AppMenuItem::Language,
+diff --git a/crates/ui-egui/src/menus/ui_commands.rs b/crates/ui-egui/src/menus/ui_commands.rs
+index 4a75a99..d007d1c 100644
+--- a/crates/ui-egui/src/menus/ui_commands.rs
++++ b/crates/ui-egui/src/menus/ui_commands.rs
+@@ -371,7 +371,6 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
          "{on?: bool, at?: [x, y] (points from the canvas's top-left)} — the Contextual Task Bar stays where it is (or at `at`) instead of following the selection; with neither, toggles",
      ),
      ("window.taskBarReset", "Reset Bar Position", None, "{} — the Contextual Task Bar follows the selection again, under it"),
@@ -114,16 +127,8 @@ index 74fe860..2f210dd 100644
      ("help.appPage", "DesignCraft Website…", None, "{} — opens https://getartcraft.com/apps/designcraft"),
      ("help.github", "DesignCraft on GitHub…", None, "{} — opens https://github.com/storytold/designcraft"),
      ("help.issues", "Report an Issue…", None, "{} — opens the GitHub issue tracker"),
-@@ -2404,7 +2403,6 @@ pub enum AppMenuItem {
- /// The macOS application menu. Settings… is `app.preferences`, which `native_menu_tree` leaves out of Edit.
- pub const MAC_APP_MENU: &[AppMenuItem] = &[
-     AppMenuItem::Cmd { id: "dc-about", label: "About DesignCraft", command: "help.about" },
--    AppMenuItem::Cmd { id: "dc-discord", label: "Join the ArtCraft Discord…", command: "help.discord" },
-     AppMenuItem::Sep,
-     AppMenuItem::Cmd { id: "dc-settings", label: "Settings…", command: "app.preferences" },
-     AppMenuItem::Language,
 diff --git a/crates/ui-egui/src/theme.rs b/crates/ui-egui/src/theme.rs
-index 666394e..b90decb 100644
+index 8efa2e4..0fc5b87 100644
 --- a/crates/ui-egui/src/theme.rs
 +++ b/crates/ui-egui/src/theme.rs
 @@ -3,6 +3,19 @@
@@ -146,7 +151,7 @@ index 666394e..b90decb 100644
  use serde::{Deserialize, Serialize};
  
  #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-@@ -497,6 +510,14 @@ pub(crate) fn font_definitions(craft: &'static [designcraft_fonts::CraftFont], l
+@@ -537,6 +550,14 @@ pub(crate) fn font_definitions(craft: &'static [designcraft_fonts::CraftFont], l
          let mut seen = std::collections::HashSet::new();
          fonts.families.insert(FontFamily::Name(family.into()), stack.filter(|n| seen.insert(n.clone())).collect());
      }
