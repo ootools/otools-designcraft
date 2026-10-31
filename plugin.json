@@ -4,6 +4,12 @@
   "displayName": "DesignCraft",
   "displayNameCN": "DesignCraft",
   "entry": "dist/index.html",
+  "fileAssociations": [
+    { "ext": "designcraft", "desc": "DesignCraft 文档", "mime": "application/octet-stream" },
+    { "ext": "idml", "desc": "InDesign 标记语言", "mime": "application/vnd.adobe.indesign-idml-package" },
+    { "ext": "indd", "desc": "InDesign 文档", "mime": "application/x-indesign" },
+    { "ext": "indt", "desc": "InDesign 模板", "mime": "application/x-indesign" }
+  ],
   "quickDev": true,
   "hasAd": false,
   "icon": "📰",
