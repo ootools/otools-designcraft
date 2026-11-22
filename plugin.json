@@ -48,5 +48,6 @@
       "designcraft://document",
       "designcraft://commands"
     ]
-  }
+  },
+  "openSourceUrl": "https://github.com/ootools/otools-designcraft"
 }
