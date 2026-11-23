@@ -1,8 +1,8 @@
 diff --git a/crates/fonts/src/fontdb.rs b/crates/fonts/src/fontdb.rs
-index d0f0054..1dc95d7 100644
+index 6e145ad..56a83f1 100644
 --- a/crates/fonts/src/fontdb.rs
 +++ b/crates/fonts/src/fontdb.rs
-@@ -148,6 +148,8 @@ use system::unix_font_dirs;
+@@ -149,6 +149,8 @@ use system::unix_font_dirs;
  #[cfg(not(target_arch = "wasm32"))]
  use system::{CatalogEntry, FileStamp};
  pub use system::{ReloadedFonts, system_font_dirs};
@@ -12,7 +12,7 @@ index d0f0054..1dc95d7 100644
  impl OutlinePen for FlipPen {
      fn move_to(&mut self, x: f32, y: f32) {
 diff --git a/crates/fonts/src/fontdb/scoped.rs b/crates/fonts/src/fontdb/scoped.rs
-index 0125984..5176748 100644
+index 3581891..7cb7c59 100644
 --- a/crates/fonts/src/fontdb/scoped.rs
 +++ b/crates/fonts/src/fontdb/scoped.rs
 @@ -3,6 +3,10 @@ use super::face::{BUNDLED, FontSource, enumerate_faces};
@@ -86,10 +86,10 @@ index 0125984..5176748 100644
      }
  
 diff --git a/crates/fonts/src/fontdb/system.rs b/crates/fonts/src/fontdb/system.rs
-index 2a367b8..494152c 100644
+index 8491680..51137f8 100644
 --- a/crates/fonts/src/fontdb/system.rs
 +++ b/crates/fonts/src/fontdb/system.rs
-@@ -227,6 +227,58 @@ fn unscanned_font_files(listed: Vec<std::path::PathBuf>, scanned: &mut std::coll
+@@ -281,6 +281,58 @@ fn unscanned_font_files(listed: Vec<std::path::PathBuf>, scanned: &mut std::coll
          .collect()
  }
  
@@ -149,12 +149,12 @@ index 2a367b8..494152c 100644
      /// Catalog the installed fonts unless that has been done: the first caller scans the font
      /// folders, any other waits for that scan to finish.
 diff --git a/crates/fonts/src/lib.rs b/crates/fonts/src/lib.rs
-index aca293d..d52f7c6 100644
+index ade84be..0a0caf6 100644
 --- a/crates/fonts/src/lib.rs
 +++ b/crates/fonts/src/lib.rs
-@@ -22,6 +22,8 @@ pub use fontdb::{
+@@ -23,6 +23,8 @@ pub use fontdb::{
      DOCUMENT_FONTS_FOLDER, DocumentFonts, FALLBACK_FAMILY, FaceRef, FontDb, FontFace, FontSource, MAX_DOCUMENT_FONT_BYTES, MAX_DOCUMENT_FONT_FILES,
-     MAX_DOCUMENT_FONTS_TOTAL, ReloadedFonts, ScopedFonts, base_style, bundled, same_style, system_font_dirs,
+     MAX_DOCUMENT_FONTS_TOTAL, ReloadedFonts, ScopedFonts, base_style, bundled, same_style, sans_by_name, system_font_dirs,
  };
 +#[cfg(target_arch = "wasm32")]
 +pub use fontdb::{SystemFont, set_system_fonts, take_pending_fonts};
