@@ -281,9 +281,13 @@ mod tests {
     fn prompts_are_answered_even_though_upstream_has_none() {
         let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // 上游没有 prompts，但协议要求答得上：空表而不是 method not found。
-        let error = rpc("prompts/list", json!({})).expect_err("upstream has no prompts");
+        let value = rpc("prompts/list", json!({})).expect("prompts/list must answer");
+        assert_eq!(value["prompts"], json!([]), "got {value}");
+
+        let error = rpc("prompts/get", json!({"name": "missing", "arguments": {}}))
+            .expect_err("an unknown prompt must fail");
         assert!(
-            error.contains("not found") || error.contains("method"),
+            error.contains("not found") || error.contains("unknown prompt"),
             "got {error}"
         );
     }
