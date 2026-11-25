@@ -53,3 +53,8 @@ node scripts/build-wasm.mjs         # trunk build --release → dist/
 需要 rustc >= 1.95 与 wasm32-unknown-unknown 目标（egui 0.37 的要求）。
 
 详细约定见 [AGENTS.md](./AGENTS.md)。
+
+## 当前移植快照（2026-11-25）
+
+当前 `upstream.pin` 固定到 [`cdd650ccddcd`](https://github.com/storytold/designcraft/commit/cdd650ccddcd945bc3bd050f40299955a7dd1c4b)。
+本次同步包含上游自 `2d9b83b48eee` 之后的更新；插件发布版本维持不变，发布时再记录发行版本。

@@ -3,7 +3,7 @@
   "ssh": "git@github.com:storytold/designcraft.git",
   "https": "https://github.com/storytold/designcraft.git",
   "ref": "main",
-  "commit": "2d9b83b48eee2e55bc814ba82b7c1dd8b21fac11",
+  "commit": "cdd650ccddcd945bc3bd050f40299955a7dd1c4b",
   "strategy": "shallow-fetch-pinned-commit",
   "note": "上游代码不入库。改这个 commit 并跑 node scripts/fetch-upstream.mjs 即可同步；务必用完整 SHA，保证可复现。"
 }
